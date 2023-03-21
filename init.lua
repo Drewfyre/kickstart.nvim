@@ -49,7 +49,7 @@ require('lazy').setup({
     priority = 1000,
     config = function()
       vim.o.background = 'dark'
-      vim.cmd.colorscheme 'gruvbox'
+      vim.cmd([[colorscheme gruvbox]])
     end,
   },
 
@@ -90,8 +90,8 @@ require('lazy').setup({
 }, {})
 
 vim.o.hlsearch = false
-vim.o.number = true
-vim.o.relativenumbers = true
+vim.wo.number = true
+vim.o.relativenumber = true
 vim.o.mouse = 'a'
 vim.o.clipboard = 'unnamedplus'
 vim.o.breakindent = true
@@ -104,11 +104,29 @@ vim.o.timeout = true
 vim.o.timeoutlen = 300
 vim.o.completeopt = 'menuone,noselect'
 vim.o.termguicolors = true
+vim.o.splitbelow = true
+vim.o.splitright = true
+vim.o.scrolloff = 3
+vim.o.incsearch = true
+vim.o.showmode = false
 
 -- [[ Basic Keymaps ]]
 
 vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 
+vim.keymap.set('n', 'vs', ':vs<CR>', { silent = true })
+vim.keymap.set('n', 'ss', ':sp<CR>', { silent = true })
+
+vim.keymap.set('n', '<C-L>', '<C-W><C-L>')
+vim.keymap.set('n', '<C-H>', '<C-W><C-H>')
+vim.keymap.set('n', '<C-K>', '<C-W><C-K>')
+vim.keymap.set('n', '<C-J>', '<C-W><C-J>')
+
+vim.keymap.set('n', '<leader>ec', ':e $MYVIMRC<CR>', { silent = true })
+vim.keymap.set('n', '<leader>sc', ':source $MYVIMRC<CR>', { silent = true })
+
+vim.keymap.set('n', '<leader>t', ':sp<CR> :term<CR> :resize 20N<CR> i', { silent = true })
+vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { silent = true })
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
@@ -123,7 +141,7 @@ vim.keymap.set("n", "<s-Tab>", "<cmd>bprevious<cr>", { desc = "Previous buffer" 
 vim.keymap.set("n", "<C-a>", "ggVG<cr>", { desc = "Select all" })
 
 -- Save files
-vim.keymap.set({ "i", "v", "n" }, "<leader>w", "<cmd>wa<cr><esc>", { desc = "Save all files" })
+vim.keymap.set({ "v", "n" }, "<leader>w", "<cmd>wa<cr><esc>", { desc = "Save all files" })
 
 -- Clear search results
 vim.keymap.set("n", "<esc>", "<cmd>noh<cr>")

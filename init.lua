@@ -154,8 +154,8 @@ vim.keymap.set("v", ">", ">gv")
 vim.keymap.set("v", "p", '"_dP')
 
 -- Move Lines
-vim.keymap.set("n", "<C-M-j>", ":m .+1<cr>==", { desc = "Move down" })
 vim.keymap.set("v", "<C-M-j>", ":m '>+1<cr>gv=gv", { desc = "Move down" })
+vim.keymap.set("n", "<C-M-j>", ":m .+1<cr>==", { desc = "Move down" })
 vim.keymap.set("i", "<C-M-j>", "<Esc>:m .+1<cr>==gi", { desc = "Move down" })
 vim.keymap.set("n", "<C-M-k>", ":m .-2<cr>==", { desc = "Move up" })
 vim.keymap.set("v", "<C-M-k>", ":m '<-2<cr>gv=gv", { desc = "Move up" })
@@ -178,6 +178,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 -- [[ Configure Telescope ]]
 require('telescope').setup {
   defaults = {
+    path_display = { "truncate" },
     mappings = {
       i = {
         ['<C-u>'] = false,
@@ -202,7 +203,7 @@ vim.keymap.set('n', '<leader>/', function()
 end, { desc = '[/] Fuzzily search in current buffer' })
 
 vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
-vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
+vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags,{ desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
 vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
@@ -281,7 +282,7 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = "Open diagn
 
 -- LSP settings.
 --  This function gets run when an LSP connects to a particular buffer.
-local on_attach = function(_, bufnr)
+local on_attach = function(client, bufnr)
   -- NOTE: Remember that lua is a real programming language, and as such it is possible
   -- to define small helper and utility functions so you don't have to repeat yourself
   -- many times.
@@ -294,6 +295,83 @@ local on_attach = function(_, bufnr)
     end
 
     vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
+  end
+
+  if client.name == "omnisharp" then
+    client.server_capabilities.semanticTokensProvider = {
+      full = vim.empty_dict(),
+      legend = {
+        tokenModifiers = { "static_symbol" },
+        tokenTypes = {
+          "comment",
+          "excluded_code",
+          "identifier",
+          "keyword",
+          "keyword_control",
+          "number",
+          "operator",
+          "operator_overloaded",
+          "preprocessor_keyword",
+          "string",
+          "whitespace",
+          "text",
+          "static_symbol",
+          "preprocessor_text",
+          "punctuation",
+          "string_verbatim",
+          "string_escape_character",
+          "class_name",
+          "delegate_name",
+          "enum_name",
+          "interface_name",
+          "module_name",
+          "struct_name",
+          "type_parameter_name",
+          "field_name",
+          "enum_member_name",
+          "constant_name",
+          "local_name",
+          "parameter_name",
+          "method_name",
+          "extension_method_name",
+          "property_name",
+          "event_name",
+          "namespace_name",
+          "label_name",
+          "xml_doc_comment_attribute_name",
+          "xml_doc_comment_attribute_quotes",
+          "xml_doc_comment_attribute_value",
+          "xml_doc_comment_cdata_section",
+          "xml_doc_comment_comment",
+          "xml_doc_comment_delimiter",
+          "xml_doc_comment_entity_reference",
+          "xml_doc_comment_name",
+          "xml_doc_comment_processing_instruction",
+          "xml_doc_comment_text",
+          "xml_literal_attribute_name",
+          "xml_literal_attribute_quotes",
+          "xml_literal_attribute_value",
+          "xml_literal_cdata_section",
+          "xml_literal_comment",
+          "xml_literal_delimiter",
+          "xml_literal_embedded_expression",
+          "xml_literal_entity_reference",
+          "xml_literal_name",
+          "xml_literal_processing_instruction",
+          "xml_literal_text",
+          "regex_comment",
+          "regex_character_class",
+          "regex_anchor",
+          "regex_quantifier",
+          "regex_grouping",
+          "regex_alternation",
+          "regex_text",
+          "regex_self_escaped_character",
+          "regex_other_escape",
+        },
+      },
+      range = true,
+    }
   end
 
   nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
@@ -324,10 +402,21 @@ local on_attach = function(_, bufnr)
   end, { desc = 'Format current buffer with LSP' })
 end
 
+local util = require 'lspconfig.util'
+local root = util.find_git_ancestor(vim.fn.getcwd())
+local pid = vim.fn.getpid()
+local omnisharp_bin = "/C:/Users/ny46864/.omnisharp/OmniSharp.exe"
 local servers = {
   clangd = {},
   tsserver = {},
-  csharp_ls = {},
+  omnisharp = {
+    cmd = { omnisharp_bin, '-s', root, '--languageserver', '--hostPID', tostring(pid) },
+    enable_roslyn_analyzers = true,
+    organize_imports_on_format = true,
+    enable_import_completion = true,
+    analyze_open_documents_only = false,
+    root_dir = root
+  },
 
   lua_ls = {
     Lua = {

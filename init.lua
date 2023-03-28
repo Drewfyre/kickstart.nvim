@@ -48,8 +48,8 @@ require('lazy').setup({
     'ellisonleao/gruvbox.nvim',
     priority = 1000,
     config = function()
-      vim.o.background = 'dark'
       vim.cmd([[colorscheme gruvbox]])
+      vim.api.nvim_set_hl(0, "Normal", { ctermbg=None })
     end,
   },
 
@@ -87,6 +87,39 @@ require('lazy').setup({
       pcall(require('nvim-treesitter.install').update { with_sync = true })
     end,
   },
+
+  {
+    "glepnir/lspsaga.nvim",
+    event = "BufRead",
+    config = function()
+      require("lspsaga").setup({
+        lightbulb = {
+          enable = false,
+          enable_in_insert = false,
+          sign = true,
+          sign_priority = 40,
+          virtual_text = true,
+        },
+        ui = {
+          title = true,
+          border = "rounded",
+          winblend = 0,
+          expand = "",
+          collapse = "",
+          code_action = "💡",
+          incoming = " ",
+          outgoing = " ",
+          hover = ' ',
+          kind = {},
+        },
+      })
+    end,
+    dependencies = {
+      {"nvim-tree/nvim-web-devicons"},
+      --Please make sure you install markdown and markdown_inline parser
+      {"nvim-treesitter/nvim-treesitter"}
+    }
+  },
 }, {})
 
 vim.o.hlsearch = false
@@ -109,6 +142,8 @@ vim.o.splitright = true
 vim.o.scrolloff = 3
 vim.o.incsearch = true
 vim.o.showmode = false
+vim.o.wrap = false
+vim.o.swapfile = false
 
 -- [[ Basic Keymaps ]]
 
@@ -124,6 +159,11 @@ vim.keymap.set('n', '<C-J>', '<C-W><C-J>')
 
 vim.keymap.set('n', '<leader>ec', ':e $MYVIMRC<CR>', { silent = true })
 vim.keymap.set('n', '<leader>sc', ':source $MYVIMRC<CR>', { silent = true })
+
+vim.keymap.set('n', '<leader>gh', '<cmd>Lspsaga lsp_finder<CR>', { silent = true })
+vim.keymap.set('n', 'K', '<cmd>Lspsaga hover_doc<CR>', { silent = true })
+vim.keymap.set('n', '<leader>e', '<cmd>Lspsaga show_line_diagnostics<CR>', { silent = true })
+vim.keymap.set({"n","v"}, "<leader>ca", "<cmd>Lspsaga code_action<CR>", { silent = true })
 
 vim.keymap.set('n', '<leader>t', ':sp<CR> :term<CR> :resize 20N<CR> i', { silent = true })
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { silent = true })
@@ -174,6 +214,9 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   group = highlight_group,
   pattern = '*',
 })
+
+-- Configure Comment.nvim
+require('Comment').setup()
 
 -- [[ Configure Telescope ]]
 require('telescope').setup {
@@ -277,7 +320,7 @@ require('nvim-treesitter.configs').setup {
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = "Go to previous diagnostic message" })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = "Go to next diagnostic message" })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = "Open floating diagnostic message" })
+-- vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = "Open floating diagnostic message" })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = "Open diagnostics list" })
 
 -- LSP settings.
@@ -297,85 +340,27 @@ local on_attach = function(client, bufnr)
     vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
   end
 
+  local imap = function(keys, func, desc)
+    if desc then
+      desc = 'LSP: ' .. desc
+    end
+
+    vim.keymap.set('i', keys, func, { buffer = bufnr, desc = desc })
+  end
+
   if client.name == "omnisharp" then
     client.server_capabilities.semanticTokensProvider = {
       full = vim.empty_dict(),
       legend = {
-        tokenModifiers = { "static_symbol" },
-        tokenTypes = {
-          "comment",
-          "excluded_code",
-          "identifier",
-          "keyword",
-          "keyword_control",
-          "number",
-          "operator",
-          "operator_overloaded",
-          "preprocessor_keyword",
-          "string",
-          "whitespace",
-          "text",
-          "static_symbol",
-          "preprocessor_text",
-          "punctuation",
-          "string_verbatim",
-          "string_escape_character",
-          "class_name",
-          "delegate_name",
-          "enum_name",
-          "interface_name",
-          "module_name",
-          "struct_name",
-          "type_parameter_name",
-          "field_name",
-          "enum_member_name",
-          "constant_name",
-          "local_name",
-          "parameter_name",
-          "method_name",
-          "extension_method_name",
-          "property_name",
-          "event_name",
-          "namespace_name",
-          "label_name",
-          "xml_doc_comment_attribute_name",
-          "xml_doc_comment_attribute_quotes",
-          "xml_doc_comment_attribute_value",
-          "xml_doc_comment_cdata_section",
-          "xml_doc_comment_comment",
-          "xml_doc_comment_delimiter",
-          "xml_doc_comment_entity_reference",
-          "xml_doc_comment_name",
-          "xml_doc_comment_processing_instruction",
-          "xml_doc_comment_text",
-          "xml_literal_attribute_name",
-          "xml_literal_attribute_quotes",
-          "xml_literal_attribute_value",
-          "xml_literal_cdata_section",
-          "xml_literal_comment",
-          "xml_literal_delimiter",
-          "xml_literal_embedded_expression",
-          "xml_literal_entity_reference",
-          "xml_literal_name",
-          "xml_literal_processing_instruction",
-          "xml_literal_text",
-          "regex_comment",
-          "regex_character_class",
-          "regex_anchor",
-          "regex_quantifier",
-          "regex_grouping",
-          "regex_alternation",
-          "regex_text",
-          "regex_self_escaped_character",
-          "regex_other_escape",
-        },
+        tokenModifiers = { "static" },
+  tokenTypes = { "comment", "excluded", "identifier", "keyword", "keyword", "number", "operator", "operator", "preprocessor", "string", "whitespace", "text", "static", "preprocessor", "punctuation", "string", "string", "class", "delegate", "enum", "interface", "module", "struct", "typeParameter", "field", "enumMember", "constant", "local", "parameter", "method", "method", "property", "event", "namespace", "label", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "xml", "regexp", "regexp", "regexp", "regexp", "regexp", "regexp", "regexp", "regexp", "regexp" }
       },
       range = true,
     }
   end
 
   nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-  nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+  -- nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
 
   nmap('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
   nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
@@ -385,8 +370,8 @@ local on_attach = function(client, bufnr)
   nmap('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
   -- See `:help K` for why this keymap
-  nmap('gh', vim.lsp.buf.hover, 'Hover Documentation')
   nmap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
+  imap('<C-k>', vim.lsp.buf.signature_help, 'Signature Documentation')
 
   -- Lesser used LSP functionality
   nmap('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
